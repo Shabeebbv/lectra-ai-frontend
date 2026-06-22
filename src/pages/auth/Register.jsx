@@ -1,7 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import api from "../../api/axios"
 import { useNavigate, Link } from "react-router-dom"
-
 // ── Password strength helpers ────────────────────────────────────────────────
 function getPasswordScore(pwd) {
   return [
@@ -128,6 +127,17 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+
+  const token = localStorage.getItem("access")
+
+  if (token) {
+    navigate("/dashboard")
+  }
+
+}, [navigate])
 
   // password validation
   const checks = getPasswordScore(formData.password)
@@ -136,22 +146,48 @@ function Register() {
     strengthMeta(passedCount, formData.password.length > 0)
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
 
-  const handlePhoneLocal = (e) => {
-    setPhoneLocal(e.target.value)
-    setFormData({ ...formData, phone_number: countryCode + e.target.value })
-  }
+  setError("")
 
-  const handleCountryCode = (e) => {
-    setCountryCode(e.target.value)
-    setFormData({ ...formData, phone_number: e.target.value + phoneLocal })
-  }
+  setFormData({
+    ...formData,
+    [e.target.name]: e.target.value,
+  })
+
+}
+
+const handlePhoneLocal = (e) => {
+
+  setError("")
+
+  setPhoneLocal(e.target.value)
+
+setFormData(prev => ({
+  ...prev,
+  phone_number: countryCode + e.target.value,
+}))
+
+}
+
+ const handleCountryCode = (e) => {
+
+  const newCode = e.target.value
+
+  setCountryCode(newCode)
+
+  setFormData(prev => ({
+    ...prev,
+    phone_number: newCode + phoneLocal,
+  }))
+
+}
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!agreed) { alert("Please agree to the Terms of Service and Privacy Policy."); return }
+    setError("")
+    if (!agreed) {setError(
+    "Please agree to the Terms of Service and Privacy Policy"
+  ); return }
 
     try {
       setLoading(true)
@@ -160,7 +196,10 @@ function Register() {
       navigate("/verify-otp", { state: { phone_number: formData.phone_number } })
     } catch (error) {
       console.log(error.response?.data)
-      alert(error.response?.data?.message || "Registration failed")
+      setError(
+  error?.response?.data?.message ||
+  "Registration failed"
+)
     } finally {
       setLoading(false)
     }
@@ -169,76 +208,77 @@ function Register() {
   return (
     <div
       className="min-h-screen flex flex-col overflow-x-hidden"
-      style={{ background: "#f8f9ff", color: "#0b1c30", fontFamily: "Inter, sans-serif" }}
+      style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#0b1c30", fontFamily: "Inter, sans-serif" }}
     >
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full mix-blend-overlay filter blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-white/10 rounded-full mix-blend-overlay filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full mix-blend-overlay filter blur-3xl animate-pulse delay-2000"></div>
+      </div>
+
       {/* ── Nav ── */}
       <nav
-        className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-5 md:px-10 h-16 border-b border-white/20 shadow-sm"
-        style={{ background: "rgba(248,249,255,0.70)", backdropFilter: "blur(20px)" }}
+        className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-5 md:px-10 h-16 border-b border-white/20 shadow-xl"
+        style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(20px)" }}
       >
-        <div className="flex items-center gap-2">
-          <BoltIcon size={28} className="text-[#4648d4]" />
-          <span className="text-xl font-bold tracking-tight text-[#4648d4]">Lectra AI</span>
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate("/")}>
+          <div className="p-1.5 rounded-lg bg-white/20 group-hover:bg-white/30 transition-all">
+            <BoltIcon size={24} className="text-white" />
+          </div>
+          <span className="text-xl font-bold tracking-tight text-white">Lectra AI</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           {["Platform", "Solutions", "Pricing"].map((item) => (
             <a
               key={item}
               href="#"
-              className="text-sm text-[#464554] hover:text-[#4648d4] transition-colors duration-200"
+              className="text-sm text-white/80 hover:text-white transition-all duration-200 font-medium"
             >
               {item}
             </a>
           ))}
-          <a href="#" className="text-sm font-semibold text-[#4648d4]">Sign In</a>
+          <Link to="/login" className="px-4 py-2 text-sm font-semibold text-[#667eea] bg-white rounded-lg hover:shadow-lg transition-all">
+            Sign In
+          </Link>
         </div>
       </nav>
 
       {/* ── Main ── */}
       <main className="flex-grow flex items-center justify-center px-4 pt-24 pb-16 relative">
-        {/* Background orbs */}
-        <div
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
-          style={{ background: "rgba(70,72,212,0.10)", filter: "blur(100px)" }}
-        />
-        <div
-          className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none"
-          style={{ background: "rgba(129,39,207,0.10)", filter: "blur(80px)" }}
-        />
-
-        <div className="w-full max-w-[480px] z-10">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="flex justify-center mb-3">
+        <div className="w-full max-w-[500px] z-10">
+          {/* Header with Animation */}
+          <div className="text-center mb-8 transform transition-all duration-500 hover:scale-105">
+            <div className="flex justify-center mb-4">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
-                style={{ background: "linear-gradient(135deg,#4648d4 0%,#8127cf 100%)" }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl animate-bounce"
+                style={{ background: "linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)" }}
               >
-                <BoltIcon size={28} className="text-white" />
+                <BoltIcon size={32} className="text-[#667eea]" />
               </div>
             </div>
-            <h1 className="text-2xl font-semibold text-[#0b1c30] mb-1">Create Your Account</h1>
-            <p className="text-sm text-[#464554]">Join Lectra AI and start your learning journey</p>
+            <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">Create Your Account</h1>
+            <p className="text-white/80 text-sm">Join Lectra AI and start your learning journey</p>
           </div>
 
-          {/* Form card (glass) */}
+          {/* Form card (glass with enhanced effects) */}
           <div
-            className="rounded-2xl py-8 px-6 space-y-5"
+            className="rounded-2xl py-8 px-6 space-y-5 shadow-2xl transition-all duration-300 hover:shadow-3xl"
             style={{
-              background: "rgba(255,255,255,0.70)",
+              background: "rgba(255,255,255,0.95)",
               backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.4)",
+              border: "1px solid rgba(255,255,255,0.2)",
             }}
           >
             <form onSubmit={handleSubmit} className="space-y-5">
 
               {/* Full Name */}
-              <div className="space-y-1">
-                <label className="block text-xs font-medium tracking-wide text-[#464554] px-1">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold tracking-wide text-[#464554] uppercase px-1">
                   Full Name
                 </label>
                 <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#767586] group-focus-within:text-[#4648d4] transition-colors">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#767586] group-focus-within:text-[#667eea] transition-colors">
                     <PersonIcon />
                   </span>
                   <input
@@ -247,15 +287,16 @@ function Register() {
                     placeholder="Enter your full name"
                     value={formData.full_name}
                     onChange={handleChange}
+                    disabled={loading}
                     required
-                    className={`${styles.inputBase} pl-10 pr-4`}
+                    className={`${styles.inputBase} pl-10 pr-4 bg-white/80 focus:bg-white`}
                   />
                 </div>
               </div>
 
               {/* Phone Number */}
-              <div className="space-y-1">
-                <label className="block text-xs font-medium tracking-wide text-[#464554] px-1">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold tracking-wide text-[#464554] uppercase px-1">
                   Phone Number
                 </label>
                 <div className="flex gap-2">
@@ -264,7 +305,8 @@ function Register() {
                     <select
                       value={countryCode}
                       onChange={handleCountryCode}
-                      className="w-full pl-3 pr-7 py-3 appearance-none bg-white/50 border border-[#767586]/30 rounded-lg focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-sm text-[#0b1c30]"
+                      disabled={loading}
+                      className="w-full pl-3 pr-7 py-3 appearance-none bg-white/80 border border-[#767586]/30 rounded-lg focus:ring-2 focus:ring-[#667eea]/20 focus:border-[#667eea] transition-all outline-none text-sm text-[#0b1c30] cursor-pointer"
                     >
                       {COUNTRY_CODES.map((c) => (
                         <option key={c.code} value={c.code}>{c.label}</option>
@@ -281,18 +323,19 @@ function Register() {
                     value={phoneLocal}
                     onChange={handlePhoneLocal}
                     required
-                    className={`${styles.inputBase} flex-grow px-4`}
+                    className={`${styles.inputBase} flex-grow px-4 bg-white/80 focus:bg-white`}
+                    disabled={loading}
                   />
                 </div>
               </div>
 
               {/* Password */}
-              <div className="space-y-2">
-                <label className="block text-xs font-medium tracking-wide text-[#464554] px-1">
+              <div className="space-y-3">
+                <label className="block text-xs font-bold tracking-wide text-[#464554] uppercase px-1">
                   Password
                 </label>
                 <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#767586] group-focus-within:text-[#4648d4] transition-colors">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#767586] group-focus-within:text-[#667eea] transition-colors">
                     <LockIcon />
                   </span>
                   <input
@@ -301,19 +344,21 @@ function Register() {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
+                    disabled={loading}
                     required
-                    className={`${styles.inputBase} pl-10 pr-10`}
+                    className={`${styles.inputBase} pl-10 pr-10 bg-white/80 focus:bg-white`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#767586] hover:text-[#0b1c30] transition-colors"
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#767586] hover:text-[#667eea] transition-colors"
                   >
                     <EyeIcon off={showPassword} />
                   </button>
                 </div>
 
-                {/* Strength meter */}
+                {/* Strength meter with better styling */}
                 <div className="px-1">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-[#464554]">
@@ -326,78 +371,90 @@ function Register() {
                       {strengthLabel || "—"}
                     </span>
                   </div>
-                  <div className="w-full bg-[#767586]/20 rounded-full h-1">
+                  <div className="w-full bg-[#767586]/20 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="h-1 rounded-full transition-all duration-300"
+                      className="h-full rounded-full transition-all duration-500 transform origin-left"
                       style={{ width: strengthWidth, background: strengthColor }}
                     />
                   </div>
                 </div>
 
-                {/* Validation checklist */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-1 pt-1">
+                {/* Validation checklist with modern design */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 px-1 pt-2">
                   {[
                     { label: "8+ characters", ok: checks[0] },
                     { label: "Uppercase",     ok: checks[1] },
                     { label: "Number",        ok: checks[2] },
                     { label: "Special char",  ok: checks[3] },
                   ].map(({ label, ok }) => (
-                    <div key={label} className="flex items-center gap-1.5">
-                      <span style={{ color: ok ? "#22c55e" : "#ba1a1a" }}>
+                    <div key={label} className="flex items-center gap-2 transition-all duration-200">
+                      <div className="transform transition-transform hover:scale-110">
                         {ok ? <CheckIcon /> : <CancelIcon />}
-                      </span>
-                      <span className="text-[12px] text-[#464554]">{label}</span>
+                      </div>
+                      <span className={`text-[12px] ${ok ? 'text-[#22c55e]' : 'text-[#464554]'} font-medium`}>{label}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Terms */}
-              <div className="flex items-start gap-2 px-1">
+              {/* Terms with improved styling */}
+              <div className="flex items-start gap-3 px-1 py-2 bg-[#f8f9ff] rounded-lg p-3">
                 <input
                   type="checkbox"
                   id="terms"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded border-[#767586]/30 accent-[#4648d4] cursor-pointer"
+                  className="mt-0.5 w-4 h-4 rounded border-[#767586]/30 accent-[#667eea] cursor-pointer"
+                  disabled={loading}
                 />
-                <label htmlFor="terms" className="text-xs text-[#464554] leading-snug cursor-pointer">
+                <label htmlFor="terms" className="text-xs text-[#464554] leading-relaxed cursor-pointer">
                   I agree to the{" "}
-                  <a href="#" className="text-[#4648d4] hover:underline">Terms of Service</a>
+                  <a href="#" className="text-[#667eea] hover:underline font-semibold">Terms of Service</a>
                   {" "}and{" "}
-                  <a href="#" className="text-[#4648d4] hover:underline">Privacy Policy</a>
+                  <a href="#" className="text-[#667eea] hover:underline font-semibold">Privacy Policy</a>
                 </label>
               </div>
 
-              {/* Submit */}
+                {error && (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+      <p className="text-red-600 text-sm">
+        {error}
+      </p>
+    </div>
+  )}
+
+              {/* Submit button with enhanced animation */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group"
                 style={{
                   background: loading
                     ? "#6063ee"
-                    : "linear-gradient(135deg,#4648d4 0%,#8127cf 100%)",
-                  boxShadow: "0 4px 20px rgba(70,72,212,0.25)",
+                    : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  boxShadow: "0 8px 25px rgba(102,126,234,0.3)",
                 }}
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"/>
-                    </svg>
-                    Registering...
-                  </span>
-                ) : (
-                  "Create Account"
-                )}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"/>
+                      </svg>
+                      Creating Account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
+                </span>
+                <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
               </button>
 
               {/* Sign in redirect */}
-              <p className="text-center text-sm text-[#464554]">
+              <p className="text-center text-sm text-[#464554] pt-2">
                 Already have an account?{" "}
-                <Link to="/login" className="text-[#4648d4] font-semibold hover:underline">
+                <Link to="/login" className="text-[#667eea] font-bold hover:underline hover:text-[#764ba2] transition-colors">
                   Sign In
                 </Link>
               </p>
@@ -407,8 +464,9 @@ function Register() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="w-full py-8 flex flex-col md:flex-row justify-between items-center px-5 md:px-10 border-t border-[#767586]/10">
-        <div className="text-xs text-[#464554]/70 mb-4 md:mb-0">
+      <footer className="w-full py-8 flex flex-col md:flex-row justify-between items-center px-5 md:px-10 border-t border-white/20 relative z-10"
+        style={{ background: "rgba(0,0,0,0.1)", backdropFilter: "blur(10px)" }}>
+        <div className="text-xs text-white/70 mb-4 md:mb-0">
           © 2024 Lectra AI. Empowering intelligence.
         </div>
         <div className="flex flex-wrap justify-center gap-6">
@@ -416,7 +474,7 @@ function Register() {
             <a
               key={item}
               href="#"
-              className="text-xs text-[#464554]/70 hover:text-[#4648d4] transition-all"
+              className="text-xs text-white/70 hover:text-white transition-all hover:scale-105"
             >
               {item}
             </a>
