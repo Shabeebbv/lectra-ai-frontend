@@ -11,7 +11,7 @@ import {
 // Primary items shown in the left sidebar (and mirrored, top 3 only, in the TopNav).
 export const SIDEBAR_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "Lectures", icon: BookOpen, path: "/lectures/:id" },
+  { label: "Lectures", icon: BookOpen, path: "/lectures" },
   { label: "My Notes", icon: FileText, path: null },
   { label: "Timeline", icon: History, path: null },
   { label: "Profile", icon: CircleUserRound, path: null },

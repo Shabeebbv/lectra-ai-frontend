@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard/Dashboard"
 import ProtectedRoute from "./routes/ProtectedRoute"
 import ForgotPassword from "./pages/auth/ForgotPassword"
 import LectureDetail from "./pages/lectures/LectureDetail"
+import LecturesList from "./pages/lectures/Lectureslist"
 
 function App() {
   return (
@@ -29,6 +30,14 @@ function App() {
     </ProtectedRoute>
   }
 />
+<Route
+  path="/lectures"
+  element={
+    <ProtectedRoute>
+      <LecturesList />
+    </ProtectedRoute>
+  }
+/>  
       </Routes>
     </BrowserRouter>
   )

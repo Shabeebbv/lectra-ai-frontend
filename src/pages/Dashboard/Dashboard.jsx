@@ -11,11 +11,15 @@ import UploadModal from "../../components/dashboard/UploadModal"
 import { useLectures } from "../../hooks/useLectures"
 
 function Dashboard() {
-  const { lectures } = useLectures()
+  const { lectures, isLoading, error, refetch } = useLectures()
   const [showUploadModal, setShowUploadModal] = useState(false)
 
   const totalLectures = lectures.length
   const completedCount = lectures.filter((l) => l.status === "completed").length
+
+  const handleUploaded = () => {
+    refetch()
+  }
 
   return (
     <div className="text-[#111c2d] bg-[#f9f9ff] min-h-screen">
@@ -73,7 +77,7 @@ function Dashboard() {
           {/* Content grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <section className="lg:col-span-8 flex flex-col gap-6">
-              <RecentLectures />
+              <RecentLectures lectures={lectures} isLoading={isLoading} error={error} />
               <LearningTimeline />
             </section>
 
@@ -99,7 +103,7 @@ function Dashboard() {
       {showUploadModal && (
         <UploadModal
           onClose={() => setShowUploadModal(false)}
-          onFileSelected={(file) => console.log("Selected lecture file:", file)}
+          onUploaded={handleUploaded}
         />
       )}
     </div>

@@ -1,9 +1,32 @@
-import { Link, useLocation } from "react-router-dom"
-import { Bell, Settings } from "lucide-react"
+import { Link, useLocation,useNavigate  } from "react-router-dom"
+import { Bell, Settings,LogOut  } from "lucide-react"
 import { TOPNAV_ITEMS } from "../../config/navItems"
+import { useState } from "react"
+import api from "../../api/axios"
 
 function TopNavBar() {
   const { pathname } = useLocation()
+
+const [open, setOpen] = useState(false)
+const navigate = useNavigate()
+
+const handleLogout = async () => {
+  try {
+    await api.post("/users/logout/", {
+      refresh: localStorage.getItem("refresh"),
+    })
+
+    localStorage.removeItem("access")
+    localStorage.removeItem("refresh")
+    navigate("/login")
+  } catch (error) {
+    console.error(error)
+    // Still clear tokens and redirect even if logout fails
+    localStorage.removeItem("access")
+    localStorage.removeItem("refresh")
+    navigate("/login")
+  }
+}
 
   return (
     <header className="fixed top-0 left-0 w-full z-40 flex justify-between items-center px-6 h-16 bg-[#f9f9ff]/80 backdrop-blur-md border-b border-[#c2c6d6]">
@@ -59,10 +82,26 @@ function TopNavBar() {
           <Settings size={20} />
         </button>
 
-        <div className="h-8 w-8 rounded-full overflow-hidden border border-[#c2c6d6] bg-[#d8e2ff] flex items-center justify-center text-xs font-semibold text-[#0058be]">
-          {/* Replace with the user's avatar/initials once profile data is available */}
-          U
-        </div>
+<div className="relative">
+  <button
+    onClick={() => setOpen(!open)}
+    className="h-8 w-8 rounded-full border border-[#c2c6d6] bg-[#d8e2ff] flex items-center justify-center text-xs font-semibold text-[#0058be]"
+  >
+    User
+  </button>
+
+  {open && (
+    <div className="absolute right-0 mt-2 w-40 bg-white border border-[#c2c6d6] rounded-lg shadow-lg overflow-hidden">
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-red-50"
+      >
+        <LogOut size={16} />
+        Logout
+      </button>
+    </div>
+  )}
+</div>
       </div>
     </header>
   )

@@ -26,3 +26,13 @@ export const LECTURE_STATUS = {
 export function getStatusMeta(status) {
   return LECTURE_STATUS[status] ?? LECTURE_STATUS.pending
 }
+
+// Derived list for filter UIs: [{ value: "all", label: "All" }, { value: "completed", label: "Completed" }, ...]
+// Stays in sync automatically if LECTURE_STATUS changes.
+export const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All" },
+  ...Object.entries(LECTURE_STATUS).map(([value, meta]) => ({
+    value,
+    label: meta.label,
+  })),
+]
