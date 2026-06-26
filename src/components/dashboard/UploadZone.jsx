@@ -71,7 +71,10 @@ function UploadZone({ onFileSelected }) {
 
           <button
             type="button"
-            onClick={handleBrowseClick}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleBrowseClick()
+            }}
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700
                        text-white px-6 py-3 rounded-xl text-sm font-medium transition-colors"
           >

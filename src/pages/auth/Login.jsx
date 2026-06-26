@@ -1,281 +1,234 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
+import { toast } from "sonner"
 import api from "../../api/axios"
 
+const COUNTRY_CODES = [
+  { code: "+91", label: "🇮🇳 +91" },
+  { code: "+1",  label: "🇺🇸 +1"  },
+  { code: "+44", label: "🇬🇧 +44" },
+  { code: "+61", label: "🇦🇺 +61" },
+  { code: "+49", label: "🇩🇪 +49" },
+]
+
 function Login() {
-
   const navigate = useNavigate()
-
-  const [formData, setFormData] = useState({
-    phone_number: "",
-    password: "",
-  })
-
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [countryCode, setCountryCode] = useState("+91")
+  const [phoneLocal, setPhoneLocal]   = useState("")
+  const [loading, setLoading]         = useState(false)
 
   useEffect(() => {
-
-    const token = localStorage.getItem("access")
-
-    if (token) {
-      navigate("/dashboard")
-    }
-
+    if (localStorage.getItem("access")) navigate("/dashboard")
   }, [navigate])
 
-  const handleChange = (e) => {
-
-    setError("")
-
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-
+  // ✅ only digits, max 10
+  const handlePhoneChange = (e) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 10)
+    setPhoneLocal(val)
   }
 
   const handleSubmit = async (e) => {
-
     e.preventDefault()
 
-    if (!formData.phone_number.trim()) {
-      setError("Phone number is required")
-      return
-    }
-
-    if (!formData.password.trim()) {
-      setError("Password is required")
+    if (phoneLocal.length !== 10) {
+      toast.error("Enter a valid 10-digit phone number")
       return
     }
 
     try {
-
       setLoading(true)
-      setError("")
-
-      const response = await api.post(
-        "/users/login/",
-        formData
-      )
-
-      const access = response?.data?.data?.access
-      const refresh = response?.data?.data?.refresh
-
-      if (!access || !refresh) {
-        throw new Error("Token not received")
+      await api.post("/users/login/", {
+        phone_number: countryCode + phoneLocal
+      })
+      toast.success("OTP sent to your number!")
+      navigate("/verify-login-otp", {
+        state: { phone_number: countryCode + phoneLocal }
+      })
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Something went wrong"
+      if (msg.toLowerCase().includes("not found")) {
+        toast.error("No account found with this number")
+      } else if (msg.toLowerCase().includes("verified")) {
+        toast.error("Account not verified. Please register first.")
+      } else {
+        toast.error(msg)
       }
-
-      localStorage.setItem("access", access)
-      localStorage.setItem("refresh", refresh)
-
-      navigate("/dashboard")
-
-    } catch (error) {
-
-      console.log(error)
-
-      setError(
-        error?.response?.data?.message ||
-        "Invalid credentials"
-      )
-
     } finally {
-
       setLoading(false)
-
     }
-
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-4 relative overflow-hidden">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 md:p-12 relative"
+      style={{
+        background: [
+          "radial-gradient(circle at 0% 0%, #ede9fe 0%, transparent 50%)",
+          "radial-gradient(circle at 100% 0%, #e0f2fe 0%, transparent 50%)",
+          "radial-gradient(circle at 100% 100%, #f0fdf4 0%, transparent 50%)",
+          "radial-gradient(circle at 0% 100%, #faf5ff 0%, transparent 50%)",
+          "#f9f9ff",
+        ].join(", "),
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <main className="relative z-10 w-full max-w-[520px] py-10 flex flex-col items-center">
 
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-
-        {/* Logo Section */}
-        <div className="text-center mb-8 transform transition-all duration-500 hover:scale-105">
-
-          <div className="inline-flex items-center justify-center mb-4">
-
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-3 shadow-xl">
-
-              <svg
-                className="w-10 h-10 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-
-            </div>
-
+        {/* Brand */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#2170e4] rounded-2xl mb-4 shadow-xl shadow-[#0058be]/10">
+            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
           </div>
-
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Lectra AI
-          </h1>
-
-          <p className="text-slate-500 mt-2 text-sm">
-            Transform videos into intelligent lectures
-          </p>
-
+          <h1 className="text-[32px] font-semibold leading-10 tracking-tight text-[#0058be]">Lectra AI</h1>
+          <p className="text-[16px] text-[#424754] mt-1">Intelligent Learning Ecosystem</p>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
+        {/* Card */}
+        <div
+          className="rounded-2xl p-10 w-full"
+          style={{
+            backgroundColor: "rgba(255,255,255,0.70)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.30)",
+            boxShadow: "0 8px 32px 0 rgba(31,38,135,0.04)",
+          }}
+        >
+          <header className="mb-6">
+            <h2 className="text-[20px] font-semibold text-[#111c2d]">Welcome back</h2>
+            <p className="text-[14px] text-[#424754] mt-1">Sign in to your scholarly dashboard</p>
+          </header>
 
-          <div className="text-center mb-8">
+          <form onSubmit={handleSubmit} className="space-y-10">
 
-            <h2 className="text-2xl font-bold text-slate-800">
-              Welcome Back
-            </h2>
+            {/* Phone */}
+            <div className="space-y-2">
+              <label className="block text-[12px] font-semibold text-[#424754] uppercase tracking-widest ml-1">
+                Phone Number
+              </label>
+              <div className="flex gap-4">
+                {/* Country */}
+                <div className="relative w-36 shrink-0">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    disabled={loading}
+                    className="w-full h-14 pl-4 pr-10 appearance-none bg-white border border-[#c2c6d6]/50 rounded-xl text-[16px] text-[#111c2d] focus:ring-2 focus:ring-[#0058be]/20 focus:border-[#0058be] outline-none cursor-pointer transition-all"
+                  >
+                    {COUNTRY_CODES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-[#727785]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
 
-            <p className="text-slate-500 mt-1 text-sm">
-              Sign in to continue creating amazing lectures
-            </p>
-
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-5"
-          >
-
-            {/* Phone Number */}
-            <div className="relative group">
-
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-
-                <svg
-                  className="h-5 w-5 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                {/* Number */}
+                <div className="relative flex-1">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="000 000 0000"
+                    value={phoneLocal}
+                    onChange={handlePhoneChange}
+                    disabled={loading}
+                    maxLength={10}
+                    className="w-full h-14 px-4 pr-12 bg-white border border-[#c2c6d6]/50 rounded-xl text-[16px] text-[#111c2d] placeholder:text-[#c2c6d6] focus:ring-2 focus:ring-[#0058be]/20 focus:border-[#0058be] outline-none transition-all"
                   />
-                </svg>
-
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <svg className="w-5 h-5 text-[#c2c6d6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              <input
-                type="text"
-                name="phone_number"
-                placeholder="Phone Number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                disabled={loading}
-                maxLength={15}
-                required
-                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white/50 disabled:opacity-60"
-              />
-
-            </div>
-
-            {/* Password */}
-            <div className="relative group">
-
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-
-                <svg
-                  className="h-5 w-5 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-
-              </div>
-
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={loading}
-                required
-                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white/50 disabled:opacity-60"
-              />
-
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 animate-shake">
-                <p className="text-red-600 text-sm text-center">
-                  {error}
+              {/* live digit counter */}
+              {/* {phoneLocal.length > 0 && phoneLocal.length < 10 && (
+                <p className="text-[12px] text-[#ba1a1a] ml-1">
+                  {10 - phoneLocal.length} more digit{10 - phoneLocal.length !== 1 ? "s" : ""} needed
                 </p>
-              </div>
-            )}
+              )*/}
+            </div> 
 
-            <div className="flex justify-end">
-
-              <button
-                type="button"
-                onClick={() => navigate("/forgot-password")}
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
-              >
-                Forgot Password?
-              </button>
-
-            </div>
-
+            {/* Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
+              disabled={loading || phoneLocal.length !== 10}
+              className="w-full h-14 bg-[#0058be] text-white text-[14px] font-medium rounded-xl flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-[#0058be]/15 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
+                  </svg>
+                  Sending OTP...
+                </span>
+              ) : (
+                <>
+                  Send OTP
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </>
+              )}
             </button>
-
           </form>
 
-          <div className="mt-6 text-center">
-
-            <p className="text-sm text-slate-600">
-
-              Don't have an account?{" "}
-
-              <button
-                type="button"
-                onClick={() => navigate("/register")}
-                className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
-              >
-                Create Account
-              </button>
-
+          <footer className="mt-10 pt-10 border-t border-[#c2c6d6]/20 text-center">
+            <p className="text-[14px] text-[#424754]">
+              New to Lectra AI?{" "}
+              <Link to="/register" className="text-[#0058be] font-bold hover:underline ml-1">
+                Create an account
+              </Link>
             </p>
-
-          </div>
-
+          </footer>
         </div>
 
-      </div>
+        {/* Insight box */}
+        <div
+          className="mt-10 p-6 rounded-2xl flex items-start gap-4 w-full"
+          style={{
+            backgroundColor: "rgba(255,255,255,0.40)",
+            border: "1px solid rgba(255,255,255,0.60)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div className="w-12 h-12 bg-[#54647a] rounded-full flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[14px] font-bold text-[#38485d]">Lectra AI Insight</p>
+            <p className="text-[14px] text-[#38485d]/80 mt-1 leading-relaxed">
+              OTP authentication provides a secure, password-less entry to your learning vault.
+              Ensure your mobile device is nearby.
+            </p>
+          </div>
+        </div>
 
+        {/* Legal */}
+        <div className="mt-10 text-center opacity-60">
+          <nav className="flex justify-center gap-6 mb-3">
+            {["Privacy Policy", "Terms of Service", "Help Center"].map((item) => (
+              <a key={item} href="#" className="text-[12px] text-[#424754] hover:text-[#0058be] transition-colors">
+                {item}
+              </a>
+            ))}
+          </nav>
+          <p className="text-[12px] text-[#424754]">© 2024 Lectra AI. All rights reserved.</p>
+        </div>
+
+      </main>
     </div>
   )
 }

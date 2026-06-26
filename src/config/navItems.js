@@ -12,7 +12,7 @@ import {
 export const SIDEBAR_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Lectures", icon: BookOpen, path: "/lectures" },
-  { label: "My Notes", icon: FileText, path: null },
+  { label: "My Notes", icon: FileText, path: "/notes" },
   { label: "Timeline", icon: History, path: null },
   { label: "Profile", icon: CircleUserRound, path: null },
 ]

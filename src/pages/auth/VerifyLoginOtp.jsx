@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import api from "../../api/axios"
 
-function VerifyOtp() {
+function VerifyLoginOtp() {
   const location     = useLocation()
   const navigate     = useNavigate()
   const phone_number = location.state?.phone_number
@@ -14,7 +14,6 @@ function VerifyOtp() {
   const [timeLeft, setTimeLeft]   = useState(300)
   const inputRefs                 = useRef([])
 
-  // countdown
   useEffect(() => {
     if (timeLeft <= 0) return
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000)
@@ -24,10 +23,9 @@ function VerifyOtp() {
   const formatTime = (s) =>
     `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`
 
-  // ── OTP box helpers ──────────────────────────────────────────
   const handleChange = (index, value) => {
     if (!/^\d*$/.test(value)) return
-    const next = [...otpDigits]
+    const next  = [...otpDigits]
     next[index] = value.slice(-1)
     setOtpDigits(next)
     if (value && index < 5) inputRefs.current[index + 1]?.focus()
@@ -48,30 +46,36 @@ function VerifyOtp() {
 
   const otp = otpDigits.join("")
 
-  // ── submit ───────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (otp.length !== 6) { toast.error("Enter the complete 6-digit OTP"); return }
     try {
       setLoading(true)
-      await api.post("/users/verify-otp/", { phone_number, otp })
-      toast.success("Account verified! Please login.")
-      navigate("/login")
+      const res     = await api.post("/users/verify-login-otp/", { phone_number, otp })
+      const access  = res?.data?.data?.tokens?.access
+      const refresh = res?.data?.data?.tokens?.refresh
+      if (!access || !refresh) throw new Error("Token missing")
+      localStorage.setItem("access", access)
+      localStorage.setItem("refresh", refresh)
+      toast.success("Welcome back!")
+      navigate("/dashboard")
     } catch (err) {
       const msg = err?.response?.data?.message || ""
-      toast.error(msg.toLowerCase().includes("expired")
-        ? "OTP expired. Please request a new one."
-        : "Wrong OTP. Please check and try again.")
+      if (msg.toLowerCase().includes("expired")) {
+        toast.error("OTP expired. Please login again.")
+        navigate("/login")
+      } else {
+        toast.error("Wrong OTP. Please check and try again.")
+      }
       setOtpDigits(Array(6).fill(""))
       inputRefs.current[0]?.focus()
     } finally { setLoading(false) }
   }
 
-  // ── resend ───────────────────────────────────────────────────
   const handleResend = async () => {
     try {
       setResending(true)
-      await api.post("/users/resend-otp/", { phone_number, purpose: "register" })
+      await api.post("/users/resend-otp/", { phone_number, purpose: "login" })
       toast.success("New OTP sent!")
       setOtpDigits(Array(6).fill(""))
       setTimeLeft(300)
@@ -89,7 +93,6 @@ function VerifyOtp() {
       className="min-h-screen flex flex-col overflow-hidden"
       style={{ backgroundColor: "#f9f9ff", fontFamily: "Inter, sans-serif" }}
     >
-      {/* Floating blobs */}
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#0058be]/5 rounded-full blur-[100px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#505f76]/5 rounded-full blur-[120px]" />
@@ -117,12 +120,11 @@ function VerifyOtp() {
               <p className="text-[14px] text-[#424754] px-2">
                 We've sent a 6-digit security code to{" "}
                 <span className="font-semibold text-[#0058be]">{phone_number}</span>.
-                Enter it below to create your account.
+                Enter it below to sign in.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-10">
-
               {/* OTP boxes */}
               <div className="flex justify-between gap-2" onPaste={handlePaste}>
                 {otpDigits.map((digit, i) => (
@@ -142,7 +144,6 @@ function VerifyOtp() {
                 ))}
               </div>
 
-              {/* Verify button */}
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
@@ -195,16 +196,16 @@ function VerifyOtp() {
             </div>
           </div>
 
-          {/* ✅ Wrong number → back to register */}
+          {/* ✅ Wrong number → back to login */}
           <div className="mt-8 text-center">
             <Link
-              to="/register"
+              to="/login"
               className="inline-flex items-center gap-2 text-[14px] font-medium text-[#424754] hover:text-[#0058be] transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Wrong number? Back to Register
+              Wrong number? Back to Login
             </Link>
           </div>
 
@@ -214,4 +215,4 @@ function VerifyOtp() {
   )
 }
 
-export default VerifyOtp
+export default VerifyLoginOtp

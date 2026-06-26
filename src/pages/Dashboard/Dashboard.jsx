@@ -68,9 +68,8 @@ function Dashboard() {
               icon={Sparkles}
               iconBgClass="bg-[#dee8ff]"
               iconColorClass="text-[#545d62]"
-              // Notes-generated count needs a backend aggregate — placeholder for now
               label="Notes Generated"
-              value="—"
+              value={completedCount}
             />
           </div>
 
