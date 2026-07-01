@@ -11,6 +11,11 @@ export const LECTURE_STATUS = {
     badgeClass: "bg-amber-100 text-amber-700",
     canPlay: false,
   },
+  transcribing: {
+    label: "Transcribing",
+    badgeClass: "bg-blue-100 text-blue-700",
+    canPlay: false,
+  },
   completed: {
     label: "Completed",
     badgeClass: "bg-emerald-100 text-emerald-700",
@@ -27,7 +32,7 @@ export function getStatusMeta(status) {
   return LECTURE_STATUS[status] ?? LECTURE_STATUS.pending
 }
 
-// Derived list for filter UIs: [{ value: "all", label: "All" }, { value: "completed", label: "Completed" }, ...]
+// Derived list for filter UIs: [{ value: "all", label: "All" }, ...]
 // Stays in sync automatically if LECTURE_STATUS changes.
 export const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "All" },

@@ -12,7 +12,8 @@ import LecturesList    from "./pages/lectures/Lectureslist"
 import NotesList       from "./pages/notes/NotesList"
 import NoteDetail      from "./pages/notes/NoteDetail"
 import { LectureSocketProvider } from "./context/LectureSocketContext"
-
+import TutorLecturePicker from "./pages/tutor/TutorLecturePicker"
+import TutorChat from "./pages/tutor/TutorChat"
 function App() {
   return (
     <BrowserRouter>
@@ -33,6 +34,8 @@ function App() {
         <Route path="/lectures" element={<ProtectedRoute><LecturesList /></ProtectedRoute>} />
         <Route path="/notes" element={<ProtectedRoute><NotesList /></ProtectedRoute>} />
         <Route path="/notes/:id" element={<ProtectedRoute><NoteDetail /></ProtectedRoute>} />
+        <Route path="/tutor" element={<ProtectedRoute><TutorLecturePicker /></ProtectedRoute>} />
+        <Route path="/tutor/:id" element={<ProtectedRoute><TutorChat /></ProtectedRoute>} />
       </Routes>
       </LectureSocketProvider>
     </BrowserRouter>

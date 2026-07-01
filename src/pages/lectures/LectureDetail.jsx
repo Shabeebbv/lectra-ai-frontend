@@ -1,6 +1,7 @@
-import { useParams } from "react-router-dom"
-import Sidebar from "../../components/common/sidebar"
-import LectureDetailTopBar from "./LectureDetailTopBar"
+import { Link, useParams } from "react-router-dom"
+import { Sparkles } from "lucide-react"
+import Sidebar from "../../components/common/Sidebar"
+import TopNavBar from "../../components/common/Topbar"
 import LecturePlayer from "./LecturePlayer"
 import SummaryCard from "./SummaryCard"
 import TranscriptPanel from "./TranscriptPanel"
@@ -33,13 +34,24 @@ function LectureDetail() {
       <Sidebar />
 
       <main className="lg:ml-64 h-screen flex flex-col">
-        <LectureDetailTopBar title={lecture.title} status={lecture.status} />
+        <TopNavBar title={lecture.title} status={lecture.status} />
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 lg:p-6 gap-6">
           {/* Left: video + summary */}
           <div className="flex-1 flex flex-col gap-6 min-w-0 overflow-y-auto">
             <LecturePlayer videoUrl={lecture.video_file} />
             <SummaryCard notes={lecture.notes} status={lecture.status} />
+
+            {lecture.status === "completed" && (
+              <Link
+                to={`/tutor/${lecture.id}`}
+                className="inline-flex items-center gap-2 self-start bg-[#0058be] text-white
+                           px-5 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-all"
+              >
+                <Sparkles size={16} />
+                Ask AI Tutor about this lecture
+              </Link>
+            )}
           </div>
 
           {/* Right: transcript */}

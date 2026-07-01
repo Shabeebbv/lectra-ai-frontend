@@ -3,6 +3,7 @@ import {
   BookOpen,
   FileText,
   History,
+  GraduationCap,
   CircleUserRound,
   HelpCircle,
   Settings,
@@ -13,6 +14,7 @@ export const SIDEBAR_NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Lectures", icon: BookOpen, path: "/lectures" },
   { label: "My Notes", icon: FileText, path: "/notes" },
+  { label: "AI Tutor", icon: GraduationCap, path: "/tutor" },
   { label: "Timeline", icon: History, path: null },
   { label: "Profile", icon: CircleUserRound, path: null },
 ]
