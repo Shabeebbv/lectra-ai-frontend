@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import api from "../../api/axios"
+import { registerFCMToken } from "../../utils/fcm"   
 
 function VerifyLoginOtp() {
   const location     = useLocation()
@@ -57,6 +58,7 @@ function VerifyLoginOtp() {
       if (!access || !refresh) throw new Error("Token missing")
       localStorage.setItem("access", access)
       localStorage.setItem("refresh", refresh)
+      registerFCMToken()
       toast.success("Welcome back!")
       navigate("/dashboard")
     } catch (err) {
