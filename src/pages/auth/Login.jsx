@@ -2,52 +2,41 @@ import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import api from "../../api/axios"
-
-const COUNTRY_CODES = [
-  { code: "+91", label: "🇮🇳 +91" },
-  { code: "+1",  label: "🇺🇸 +1"  },
-  { code: "+44", label: "🇬🇧 +44" },
-  { code: "+61", label: "🇦🇺 +61" },
-  { code: "+49", label: "🇩🇪 +49" },
-]
+import IdentifierInput from "../../components/IdentifierInput"
+import { isEmail } from "../../utils/identifier"
 
 function Login() {
   const navigate = useNavigate()
-  const [countryCode, setCountryCode] = useState("+91")
-  const [phoneLocal, setPhoneLocal]   = useState("")
-  const [loading, setLoading]         = useState(false)
+  const [identifierState, setIdentifierState] = useState({ identifier: "", valid: false, mode: null })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem("access")) navigate("/dashboard")
   }, [navigate])
 
-  // ✅ only digits, max 10
-  const handlePhoneChange = (e) => {
-    const val = e.target.value.replace(/\D/g, "").slice(0, 10)
-    setPhoneLocal(val)
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (phoneLocal.length !== 10) {
-      toast.error("Enter a valid 10-digit phone number")
+    if (!identifierState.valid) {
+      toast.error(
+        identifierState.mode === "phone"
+          ? "Enter a valid 10-digit phone number"
+          : "Enter a valid email address"
+      )
       return
     }
 
+    const value = identifierState.identifier
+
     try {
       setLoading(true)
-      await api.post("/users/login/", {
-        phone_number: countryCode + phoneLocal
-      })
-      toast.success("OTP sent to your number!")
-      navigate("/verify-login-otp", {
-        state: { phone_number: countryCode + phoneLocal }
-      })
+      await api.post("/users/login/", { identifier: value })
+      toast.success(`OTP sent to your ${isEmail(value) ? "email" : "number"}!`)
+      navigate("/verify-login-otp", { state: { identifier: value } })
     } catch (err) {
       const msg = err?.response?.data?.message || "Something went wrong"
       if (msg.toLowerCase().includes("not found")) {
-        toast.error("No account found with this number")
+        toast.error("No account found with this email/number")
       } else if (msg.toLowerCase().includes("verified")) {
         toast.error("Account not verified. Please register first.")
       } else {
@@ -103,64 +92,22 @@ function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-10">
 
-            {/* Phone */}
+            {/* Identifier */}
             <div className="space-y-2">
               <label className="block text-[12px] font-semibold text-[#424754] uppercase tracking-widest ml-1">
-                Phone Number
+                Email or Phone Number
               </label>
-              <div className="flex gap-4">
-                {/* Country */}
-                <div className="relative w-36 shrink-0">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    disabled={loading}
-                    className="w-full h-14 pl-4 pr-10 appearance-none bg-white border border-[#c2c6d6]/50 rounded-xl text-[16px] text-[#111c2d] focus:ring-2 focus:ring-[#0058be]/20 focus:border-[#0058be] outline-none cursor-pointer transition-all"
-                  >
-                    {COUNTRY_CODES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.label}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-4 h-4 text-[#727785]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Number */}
-                <div className="relative flex-1">
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder="000 000 0000"
-                    value={phoneLocal}
-                    onChange={handlePhoneChange}
-                    disabled={loading}
-                    maxLength={10}
-                    className="w-full h-14 px-4 pr-12 bg-white border border-[#c2c6d6]/50 rounded-xl text-[16px] text-[#111c2d] placeholder:text-[#c2c6d6] focus:ring-2 focus:ring-[#0058be]/20 focus:border-[#0058be] outline-none transition-all"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <svg className="w-5 h-5 text-[#c2c6d6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                        d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* live digit counter */}
-              {/* {phoneLocal.length > 0 && phoneLocal.length < 10 && (
-                <p className="text-[12px] text-[#ba1a1a] ml-1">
-                  {10 - phoneLocal.length} more digit{10 - phoneLocal.length !== 1 ? "s" : ""} needed
-                </p>
-              )*/}
-            </div> 
+              <IdentifierInput
+                onChange={setIdentifierState}
+                disabled={loading}
+                inputClassName="w-full h-14 px-4 bg-white border border-[#c2c6d6]/50 rounded-xl text-[16px] text-[#111c2d] placeholder:text-[#c2c6d6] focus:ring-2 focus:ring-[#0058be]/20 focus:border-[#0058be] outline-none transition-all"
+              />
+            </div>
 
             {/* Button */}
             <button
               type="submit"
-              disabled={loading || phoneLocal.length !== 10}
+              disabled={loading || !identifierState.valid}
               className="w-full h-14 bg-[#0058be] text-white text-[14px] font-medium rounded-xl flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-[#0058be]/15 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -211,7 +158,7 @@ function Login() {
             <p className="text-[14px] font-bold text-[#38485d]">Lectra AI Insight</p>
             <p className="text-[14px] text-[#38485d]/80 mt-1 leading-relaxed">
               OTP authentication provides a secure, password-less entry to your learning vault.
-              Ensure your mobile device is nearby.
+              Use whichever contact — email or phone — you registered with.
             </p>
           </div>
         </div>

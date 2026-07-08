@@ -15,7 +15,7 @@ export const SIDEBAR_NAV_ITEMS = [
   { label: "Lectures", icon: BookOpen, path: "/lectures" },
   { label: "My Notes", icon: FileText, path: "/notes" },
   { label: "AI Tutor", icon: GraduationCap, path: "/tutor" },
-  { label: "Timeline", icon: History, path: null },
+  { label: "Timeline", icon: History, path: "/timeline" },
   { label: "Profile", icon: CircleUserRound, path: null },
 ]
 

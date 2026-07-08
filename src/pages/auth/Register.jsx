@@ -2,58 +2,49 @@ import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import api from "../../api/axios"
-
-const COUNTRY_CODES = [
-  { code: "+91", label: "IND (+91)" },
-  { code: "+1",  label: "USA (+1)"  },
-  { code: "+44", label: "UK (+44)"  },
-  { code: "+61", label: "AUS (+61)" },
-  { code: "+49", label: "GER (+49)" },
-  { code: "+81", label: "JPN (+81)" },
-  { code: "+33", label: "FRA (+33)" },
-]
+import IdentifierInput from "../../components/IdentifierInput"
+import { isEmail } from "../../utils/identifier"
 
 function Register() {
   const navigate = useNavigate()
-  const [fullName, setFullName]       = useState("")
-  const [countryCode, setCountryCode] = useState("+91")
-  const [phoneLocal, setPhoneLocal]   = useState("")
-  const [loading, setLoading]         = useState(false)
+  const [fullName, setFullName] = useState("")
+  const [identifierState, setIdentifierState] = useState({ identifier: "", valid: false, mode: null })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem("access")) navigate("/dashboard")
   }, [navigate])
 
-  // ✅ only digits, max 10
-  const handlePhoneChange = (e) => {
-    const val = e.target.value.replace(/\D/g, "").slice(0, 10)
-    setPhoneLocal(val)
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     if (!fullName.trim()) {
       toast.error("Please enter your full name")
       return
     }
-    if (phoneLocal.length !== 10) {
-      toast.error("Enter a valid 10-digit phone number")
+    if (!identifierState.valid) {
+      toast.error(
+        identifierState.mode === "phone"
+          ? "Enter a valid 10-digit phone number"
+          : "Enter a valid email address"
+      )
       return
     }
+
+    const value = identifierState.identifier
+    const payload = isEmail(value)
+      ? { full_name: fullName, email: value }
+      : { full_name: fullName, phone_number: value }
+
     try {
       setLoading(true)
-      await api.post("/users/register/", {
-        full_name: fullName,
-        phone_number: countryCode + phoneLocal,
-      })
-      toast.success("OTP sent to your number!")
-      navigate("/verify-otp", {
-        state: { phone_number: countryCode + phoneLocal }
-      })
+      await api.post("/users/register/", payload)
+      toast.success(`OTP sent to your ${isEmail(value) ? "email" : "number"}!`)
+      navigate("/verify-otp", { state: { identifier: value } })
     } catch (err) {
       const msg = err?.response?.data?.message || "Registration failed"
       if (msg.toLowerCase().includes("already")) {
-        toast.error("This number is already registered. Please login.")
+        toast.error("This email/number is already registered. Please login.")
       } else {
         toast.error(msg)
       }
@@ -124,48 +115,16 @@ function Register() {
               />
             </div>
 
-            {/* Phone */}
+            {/* Identifier */}
             <div className="space-y-1">
               <label className="block text-[12px] font-semibold text-[#424754] uppercase tracking-wider px-1 opacity-70">
-                Phone Number
+                Email or Phone Number
               </label>
-              <div className="flex gap-4">
-                {/* Country */}
-                <div className="relative w-[120px] shrink-0">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    disabled={loading}
-                    className="w-full h-[52px] px-4 pr-10 appearance-none bg-white/60 border border-white/80 rounded-xl text-[16px] text-[#111c2d] focus:outline-none focus:border-[#0058be] focus:ring-2 focus:ring-[#0058be]/5 transition-all cursor-pointer"
-                  >
-                    {COUNTRY_CODES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.label}</option>
-                    ))}
-                  </select>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-4 h-4 text-[#424754]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
-                </div>
-                {/* Number */}
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="555-0123"
-                  value={phoneLocal}
-                  onChange={handlePhoneChange}
-                  disabled={loading}
-                  maxLength={10}
-                  required
-                  className={`${inputClass} flex-1`}
-                />
-              </div>
-              {/* {phoneLocal.length > 0 && phoneLocal.length < 10 && (
-                <p className="text-[12px] text-[#ba1a1a] ml-1 mt-1">
-                  {10 - phoneLocal.length} more digit{10 - phoneLocal.length !== 1 ? "s" : ""} needed
-                </p>
-              )} */}
+              <IdentifierInput
+                onChange={setIdentifierState}
+                disabled={loading}
+                inputClassName={inputClass}
+              />
             </div>
 
             {/* Terms */}
@@ -179,7 +138,7 @@ function Register() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || phoneLocal.length !== 10 || !fullName.trim()}
+              disabled={loading || !identifierState.valid || !fullName.trim()}
               className="w-full h-[56px] bg-[#0058be] text-white text-[20px] font-semibold rounded-xl flex items-center justify-center gap-2 group hover:shadow-lg hover:shadow-[#0058be]/20 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (

@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import api from "../../api/axios"
+import { isEmail } from "../../utils/identifier"
 
 function VerifyOtp() {
-  const location     = useLocation()
-  const navigate     = useNavigate()
-  const phone_number = location.state?.phone_number
+  const location   = useLocation()
+  const navigate   = useNavigate()
+  const identifier = location.state?.identifier
 
   const [otpDigits, setOtpDigits] = useState(Array(6).fill(""))
   const [loading, setLoading]     = useState(false)
@@ -14,7 +15,10 @@ function VerifyOtp() {
   const [timeLeft, setTimeLeft]   = useState(300)
   const inputRefs                 = useRef([])
 
-  // countdown
+  useEffect(() => {
+    if (!identifier) navigate("/register")
+  }, [identifier, navigate])
+
   useEffect(() => {
     if (timeLeft <= 0) return
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000)
@@ -24,7 +28,6 @@ function VerifyOtp() {
   const formatTime = (s) =>
     `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`
 
-  // ── OTP box helpers ──────────────────────────────────────────
   const handleChange = (index, value) => {
     if (!/^\d*$/.test(value)) return
     const next = [...otpDigits]
@@ -48,13 +51,12 @@ function VerifyOtp() {
 
   const otp = otpDigits.join("")
 
-  // ── submit ───────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (otp.length !== 6) { toast.error("Enter the complete 6-digit OTP"); return }
     try {
       setLoading(true)
-      await api.post("/users/verify-otp/", { phone_number, otp })
+      await api.post("/users/verify-otp/", { identifier, otp })
       toast.success("Account verified! Please login.")
       navigate("/login")
     } catch (err) {
@@ -67,11 +69,10 @@ function VerifyOtp() {
     } finally { setLoading(false) }
   }
 
-  // ── resend ───────────────────────────────────────────────────
   const handleResend = async () => {
     try {
       setResending(true)
-      await api.post("/users/resend-otp/", { phone_number, purpose: "register" })
+      await api.post("/users/resend-otp/", { identifier, purpose: "register" })
       toast.success("New OTP sent!")
       setOtpDigits(Array(6).fill(""))
       setTimeLeft(300)
@@ -89,7 +90,6 @@ function VerifyOtp() {
       className="min-h-screen flex flex-col overflow-hidden"
       style={{ backgroundColor: "#f9f9ff", fontFamily: "Inter, sans-serif" }}
     >
-      {/* Floating blobs */}
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#0058be]/5 rounded-full blur-[100px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#505f76]/5 rounded-full blur-[120px]" />
@@ -113,10 +113,12 @@ function VerifyOtp() {
           {/* Card */}
           <div className="bg-white border border-[#c2c6d6] rounded-2xl p-10 shadow-sm">
             <div className="text-center mb-6">
-              <h2 className="text-[20px] font-semibold text-[#111c2d] mb-2">Verify your phone</h2>
+              <h2 className="text-[20px] font-semibold text-[#111c2d] mb-2">
+                Verify your {isEmail(identifier || "") ? "email" : "phone"}
+              </h2>
               <p className="text-[14px] text-[#424754] px-2">
                 We've sent a 6-digit security code to{" "}
-                <span className="font-semibold text-[#0058be]">{phone_number}</span>.
+                <span className="font-semibold text-[#0058be]">{identifier}</span>.
                 Enter it below to create your account.
               </p>
             </div>
@@ -195,7 +197,7 @@ function VerifyOtp() {
             </div>
           </div>
 
-          {/* ✅ Wrong number → back to register */}
+          {/* Wrong identifier → back to register */}
           <div className="mt-8 text-center">
             <Link
               to="/register"
@@ -204,7 +206,7 @@ function VerifyOtp() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Wrong number? Back to Register
+              Wrong details? Back to Register
             </Link>
           </div>
 

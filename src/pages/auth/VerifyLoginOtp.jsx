@@ -2,18 +2,23 @@ import { useState, useRef, useEffect } from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import api from "../../api/axios"
-import { registerFCMToken } from "../../utils/fcm"   
+import { registerFCMToken } from "../../utils/fcm"
+import { isEmail } from "../../utils/identifier"
 
 function VerifyLoginOtp() {
-  const location     = useLocation()
-  const navigate     = useNavigate()
-  const phone_number = location.state?.phone_number
+  const location   = useLocation()
+  const navigate   = useNavigate()
+  const identifier = location.state?.identifier
 
   const [otpDigits, setOtpDigits] = useState(Array(6).fill(""))
   const [loading, setLoading]     = useState(false)
   const [resending, setResending] = useState(false)
   const [timeLeft, setTimeLeft]   = useState(300)
   const inputRefs                 = useRef([])
+
+  useEffect(() => {
+    if (!identifier) navigate("/login")
+  }, [identifier, navigate])
 
   useEffect(() => {
     if (timeLeft <= 0) return
@@ -52,7 +57,7 @@ function VerifyLoginOtp() {
     if (otp.length !== 6) { toast.error("Enter the complete 6-digit OTP"); return }
     try {
       setLoading(true)
-      const res     = await api.post("/users/verify-login-otp/", { phone_number, otp })
+      const res     = await api.post("/users/verify-login-otp/", { identifier, otp })
       const access  = res?.data?.data?.tokens?.access
       const refresh = res?.data?.data?.tokens?.refresh
       if (!access || !refresh) throw new Error("Token missing")
@@ -77,7 +82,7 @@ function VerifyLoginOtp() {
   const handleResend = async () => {
     try {
       setResending(true)
-      await api.post("/users/resend-otp/", { phone_number, purpose: "login" })
+      await api.post("/users/resend-otp/", { identifier, purpose: "login" })
       toast.success("New OTP sent!")
       setOtpDigits(Array(6).fill(""))
       setTimeLeft(300)
@@ -118,10 +123,12 @@ function VerifyLoginOtp() {
           {/* Card */}
           <div className="bg-white border border-[#c2c6d6] rounded-2xl p-10 shadow-sm">
             <div className="text-center mb-6">
-              <h2 className="text-[20px] font-semibold text-[#111c2d] mb-2">Verify your phone</h2>
+              <h2 className="text-[20px] font-semibold text-[#111c2d] mb-2">
+                Verify your {isEmail(identifier || "") ? "email" : "phone"}
+              </h2>
               <p className="text-[14px] text-[#424754] px-2">
                 We've sent a 6-digit security code to{" "}
-                <span className="font-semibold text-[#0058be]">{phone_number}</span>.
+                <span className="font-semibold text-[#0058be]">{identifier}</span>.
                 Enter it below to sign in.
               </p>
             </div>
@@ -198,7 +205,7 @@ function VerifyLoginOtp() {
             </div>
           </div>
 
-          {/* ✅ Wrong number → back to login */}
+          {/* Wrong identifier → back to login */}
           <div className="mt-8 text-center">
             <Link
               to="/login"
@@ -207,7 +214,7 @@ function VerifyLoginOtp() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Wrong number? Back to Login
+              Wrong details? Back to Login
             </Link>
           </div>
 
