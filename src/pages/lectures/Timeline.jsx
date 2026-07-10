@@ -75,10 +75,10 @@ function Timeline() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: "#f9f9ff" }}>
         <p className="text-[#ba1a1a] text-[14px]">{error}</p>
         <button
-          onClick={() => navigate("/lectures")}
+          onClick={() => navigate("/timeline")}
           className="text-[#0058be] font-semibold text-[14px] hover:underline"
         >
-          Back to lectures
+          Back to Timeline
         </button>
       </div>
     )
@@ -92,11 +92,11 @@ function Timeline() {
 
         {/* Header */}
         <header className="mb-8">
-          <Link to="/lectures" className="text-[13px] text-[#424754] hover:text-[#0058be] transition-colors inline-flex items-center gap-1 mb-3">
+          <Link to="/timeline" className="text-[13px] text-[#424754] hover:text-[#0058be] transition-colors inline-flex items-center gap-1 mb-3">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Lectures
+            Timeline list
           </Link>
           <h1 className="text-[28px] font-semibold text-[#111c2d] tracking-tight">{lecture?.title}</h1>
           <p className="text-[14px] text-[#424754] mt-1">Interactive timeline of key lecture moments</p>
