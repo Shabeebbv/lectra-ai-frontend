@@ -1,4 +1,4 @@
-export default function ConfirmDialog({ open, title, message, confirmLabel, danger, onConfirm, onCancel }) {
+export default function ConfirmDialog({ open, title, message, confirmLabel, danger, onConfirm, onCancel, children }) {
   if (!open) return null;
 
   return (
@@ -6,6 +6,7 @@ export default function ConfirmDialog({ open, title, message, confirmLabel, dang
       <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-semibold text-slate-900">{title}</h3>
         <p className="mt-2 text-sm text-slate-600">{message}</p>
+        {children}
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onCancel}

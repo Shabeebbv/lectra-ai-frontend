@@ -4,6 +4,8 @@ import { toast } from "sonner"
 import api from "../../api/axios"
 import { registerFCMToken } from "../../utils/fcm"
 import { isEmail } from "../../utils/identifier"
+import { jwtDecode } from "jwt-decode"
+import { log } from "firebase/firestore/pipelines"
 
 function VerifyLoginOtp() {
   const location   = useLocation()
@@ -52,32 +54,48 @@ function VerifyLoginOtp() {
 
   const otp = otpDigits.join("")
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (otp.length !== 6) { toast.error("Enter the complete 6-digit OTP"); return }
-    try {
-      setLoading(true)
-      const res     = await api.post("/users/verify-login-otp/", { identifier, otp })
-      const access  = res?.data?.data?.tokens?.access
-      const refresh = res?.data?.data?.tokens?.refresh
-      if (!access || !refresh) throw new Error("Token missing")
-      localStorage.setItem("access", access)
-      localStorage.setItem("refresh", refresh)
-      registerFCMToken()
-      toast.success("Welcome back!")
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  if (otp.length !== 6) { toast.error("Enter the complete 6-digit OTP"); return }
+  try {
+    setLoading(true)
+    const res = await api.post("/users/verify-login-otp/", { identifier, otp })
+
+    if (res.data.data.mfa_required) {
+      // Admin/super_admin with MFA enabled — hand off to the MFA step
+      // instead of storing tokens (none were issued yet).
+      navigate("/verify-mfa", { state: { identifier } })
+      return
+    }
+
+    const access  = res?.data?.data?.tokens?.access
+    const refresh = res?.data?.data?.tokens?.refresh
+    if (!access || !refresh) throw new Error("Token missing")
+    localStorage.setItem("access", access)
+    localStorage.setItem("refresh", refresh)
+    registerFCMToken()
+    toast.success("Welcome back!")
+
+    const decoded = jwtDecode(access)
+    const role = decoded.role
+
+    if (role === "admin" || role === "super_admin") {
+      navigate("/admin/dashboard")
+    } else {
       navigate("/dashboard")
-    } catch (err) {
-      const msg = err?.response?.data?.message || ""
-      if (msg.toLowerCase().includes("expired")) {
-        toast.error("OTP expired. Please login again.")
-        navigate("/login")
-      } else {
-        toast.error("Wrong OTP. Please check and try again.")
-      }
-      setOtpDigits(Array(6).fill(""))
-      inputRefs.current[0]?.focus()
-    } finally { setLoading(false) }
-  }
+    }
+  } catch (err) {
+    const msg = err?.response?.data?.message || ""
+    if (msg.toLowerCase().includes("expired")) {
+      toast.error("OTP expired. Please login again.")
+      navigate("/login")
+    } else {
+      toast.error("Wrong OTP. Please check and try again.")
+    }
+    setOtpDigits(Array(6).fill(""))
+    inputRefs.current[0]?.focus()
+  } finally { setLoading(false) }
+}
 
   const handleResend = async () => {
     try {

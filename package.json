@@ -15,11 +15,13 @@
     "firebase": "^12.15.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^1.21.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.15.1",
+    "recharts": "^3.9.2",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.3.0"
   },

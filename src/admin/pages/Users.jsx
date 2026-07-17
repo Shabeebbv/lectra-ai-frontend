@@ -3,12 +3,12 @@ import { useUsers } from "../hooks/useUsers";
 import UsersFilters from "../components/users/UsersFilters";
 import UsersTable from "../components/users/UsersTable";
 import ConfirmDialog from "../components/users/ConfirmDialog";
-import { useAuth } from "../../context/AuthContext"; // adjust to your actual auth context
-
+import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { Link } from "react-router-dom" 
 const PAGE_SIZE = 20;
 
 export default function Users() {
-  const { user: currentAdmin } = useAuth();
+  const currentAdmin = useCurrentUser();
   const {
     users,
     loading,
@@ -37,12 +37,18 @@ export default function Users() {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">Users</h1>
-          <p className="mt-1 text-sm text-slate-500">{totalCount} total</p>
-        </div>
-      </div>
+<div className="mb-6 flex items-center justify-between">
+  <div>
+    <h1 className="text-xl font-semibold text-slate-900">Users</h1>
+    <p className="mt-1 text-sm text-slate-500">{totalCount} total</p>
+  </div>
+  <Link
+    to="/admin/users/deleted"
+    className="text-sm font-medium text-slate-500 hover:text-slate-800 underline decoration-dotted underline-offset-2"
+  >
+    View deleted users
+  </Link>
+</div>
 
       <div className="mb-4">
         <UsersFilters
