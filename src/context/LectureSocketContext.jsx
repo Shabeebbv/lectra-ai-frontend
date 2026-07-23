@@ -205,6 +205,19 @@ export function LectureSocketProvider({
 
     }, []);
 
+  const reconnect = useCallback(() => {
+  clearTimeout(reconnectTimeoutRef.current);
+
+  if (socketRef.current) {
+    socketRef.current.onclose = null;
+    socketRef.current.close();
+    socketRef.current = null;
+  }
+
+  setIsConnected(false);
+  connect();
+}, [connect]);
+
   useEffect(() => {
 
     connect();
@@ -227,6 +240,7 @@ export function LectureSocketProvider({
       value={{
         statusUpdates,
         isConnected,
+        reconnect,
       }}
     >
       {children}

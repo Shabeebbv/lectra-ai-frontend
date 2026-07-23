@@ -4,8 +4,9 @@ import { toast } from "sonner"
 import { jwtDecode } from "jwt-decode"
 import { mfaService } from "../../services/mfaService"
 import { registerFCMToken } from "../../utils/fcm"
-
+import { useLectureSocket } from "../../context/LectureSocketContext"
 function VerifyMfa() {
+  const { reconnect } = useLectureSocket()
   const location = useLocation()
   const navigate = useNavigate()
   const identifier = location.state?.identifier
@@ -53,10 +54,12 @@ function VerifyMfa() {
 
       localStorage.setItem("access", access)
       localStorage.setItem("refresh", refresh)
+
       registerFCMToken()
       toast.success("Welcome back!")
 
       const decoded = jwtDecode(access)
+      reconnect()
       navigate(decoded.role === "admin" || decoded.role === "super_admin" ? "/admin/dashboard" : "/dashboard")
     } catch (err) {
       toast.error(err?.response?.data?.message || "Invalid code. Please try again.")

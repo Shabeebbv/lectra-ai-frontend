@@ -6,8 +6,10 @@ import { registerFCMToken } from "../../utils/fcm"
 import { isEmail } from "../../utils/identifier"
 import { jwtDecode } from "jwt-decode"
 import { log } from "firebase/firestore/pipelines"
+import { useLectureSocket } from "../../context/LectureSocketContext"
 
 function VerifyLoginOtp() {
+  const { reconnect } = useLectureSocket()
   const location   = useLocation()
   const navigate   = useNavigate()
   const identifier = location.state?.identifier
@@ -73,6 +75,7 @@ const handleSubmit = async (e) => {
     if (!access || !refresh) throw new Error("Token missing")
     localStorage.setItem("access", access)
     localStorage.setItem("refresh", refresh)
+    reconnect()
     registerFCMToken()
     toast.success("Welcome back!")
 
