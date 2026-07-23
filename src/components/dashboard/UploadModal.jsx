@@ -1,6 +1,6 @@
 import { useState } from "react"
 import UploadZone from "./UploadZone"
-import ProgressBar from "./Progressbar"
+import ProgressBar from "./ProgressBar"
 import { useUploadLecture } from "../../hooks/Useuploadlecture "
 import { titleFromFilename } from "../../utils/titleFromFilename"
 

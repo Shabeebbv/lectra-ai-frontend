@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 
 import TopNavBar from "../../components/common/Topbar"
-import Sidebar from "../../components/common/sidebar"
+import Sidebar from "../../components/common/Sidebar"
 import SearchInput from "./SearchInput"
 
 import { useLectures } from "../../hooks/useLectures"

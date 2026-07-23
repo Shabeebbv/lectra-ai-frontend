@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import TopNavBar from "../../components/common/Topbar"
-import Sidebar from "../../components/common/sidebar"
+import Sidebar from "../../components/common/Sidebar"
 import NoteCard from "./NoteCard"
 import EmptyNotes from "./EmptyNotes"
 import SearchInput from "../lectures/SearchInput"

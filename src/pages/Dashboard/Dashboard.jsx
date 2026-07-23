@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Video, Timer, Sparkles, Upload, Plus } from "lucide-react"
 import TopNavBar from "../../components/common/Topbar"
-import Sidebar from "../../components/common/sidebar"
+import Sidebar from "../../components/common/Sidebar"
 import StatCard from "../../components/dashboard/StatCard"
 import RecentLectures from "../../components/dashboard/RecentLectures"
 import LearningTimeline from "../../components/dashboard/LearningTimeline"

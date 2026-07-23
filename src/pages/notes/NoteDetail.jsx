@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom"
 import ReactMarkdown from "react-markdown"
 import { ChevronLeft, PlayCircle } from "lucide-react"
 import TopNavBar from "../../components/common/Topbar"
-import Sidebar from "../../components/common/sidebar"
+import Sidebar from "../../components/common/Sidebar"
 import { useLectureDetail } from "../../hooks/useLectureDetail"
 import { formatLectureDate } from "../../utils/formatLectureDate"
 
