@@ -15,7 +15,7 @@ function AdminTopbar() {
     } finally {
       localStorage.removeItem("access")
       localStorage.removeItem("refresh")
-      navigate("/login")
+      navigate("/")
     }
   }
 

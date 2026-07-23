@@ -29,7 +29,7 @@ function rejectQueue(error) {
 function redirectToLogin() {
   localStorage.removeItem("access")
   localStorage.removeItem("refresh")
-  window.location.href = "/login"
+  window.location.href = "/"
 }
 
 api.interceptors.response.use(

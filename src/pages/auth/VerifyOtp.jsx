@@ -58,7 +58,7 @@ function VerifyOtp() {
       setLoading(true)
       await api.post("/users/verify-otp/", { identifier, otp })
       toast.success("Account verified! Please login.")
-      navigate("/login")
+      navigate("/")
     } catch (err) {
       const msg = err?.response?.data?.message || ""
       toast.error(msg.toLowerCase().includes("expired")

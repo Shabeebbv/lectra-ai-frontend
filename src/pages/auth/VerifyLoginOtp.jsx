@@ -19,7 +19,7 @@ function VerifyLoginOtp() {
   const inputRefs                 = useRef([])
 
   useEffect(() => {
-    if (!identifier) navigate("/login")
+    if (!identifier) navigate("/")
   }, [identifier, navigate])
 
   useEffect(() => {
@@ -88,7 +88,7 @@ const handleSubmit = async (e) => {
     const msg = err?.response?.data?.message || ""
     if (msg.toLowerCase().includes("expired")) {
       toast.error("OTP expired. Please login again.")
-      navigate("/login")
+      navigate("/")
     } else {
       toast.error("Wrong OTP. Please check and try again.")
     }
@@ -226,7 +226,7 @@ const handleSubmit = async (e) => {
           {/* Wrong identifier → back to login */}
           <div className="mt-8 text-center">
             <Link
-              to="/login"
+              to="/"
               className="inline-flex items-center gap-2 text-[14px] font-medium text-[#424754] hover:text-[#0058be] transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

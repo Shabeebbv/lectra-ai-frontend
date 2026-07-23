@@ -30,12 +30,12 @@ function TopNavBar() {
       })
       localStorage.removeItem("access")
       localStorage.removeItem("refresh")
-      navigate("/login")
+      navigate("/")
     } catch (error) {
       console.error(error)
       localStorage.removeItem("access")
       localStorage.removeItem("refresh")
-      navigate("/login")
+      navigate("/")
     }
   }
 

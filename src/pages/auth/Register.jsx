@@ -164,7 +164,7 @@ function Register() {
           <div className="mt-10 pt-10 border-t border-white/40 flex flex-col items-center">
             <p className="text-[16px] text-[#424754]">
               Already have an account?{" "}
-              <Link to="/login" className="text-[#0058be] font-bold hover:text-[#004395] transition-colors">
+              <Link to="/" className="text-[#0058be] font-bold hover:text-[#004395] transition-colors">
                 Login
               </Link>
             </p>

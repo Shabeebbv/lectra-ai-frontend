@@ -173,7 +173,7 @@ export function LectureSocketProvider({
                 localStorage.clear();
 
                 window.location.href =
-                  "/login";
+                  "/";
 
                 return;
               }

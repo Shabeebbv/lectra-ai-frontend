@@ -5,7 +5,7 @@ function AdminProtectedRoute({ children }) {
   const token = localStorage.getItem("access")
 
   if (!token) {
-    return <Navigate to="/login" />
+    return <Navigate to="/" />
   }
 
   const currentUser = useCurrentUser()

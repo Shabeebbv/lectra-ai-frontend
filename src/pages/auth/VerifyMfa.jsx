@@ -15,7 +15,7 @@ function VerifyMfa() {
   const inputRefs = useRef([])
 
   useEffect(() => {
-    if (!identifier) navigate("/login")
+    if (!identifier) navigate("/")
   }, [identifier, navigate])
 
   const handleChange = (index, value) => {
@@ -112,7 +112,7 @@ function VerifyMfa() {
           </div>
 
           <div className="mt-8 text-center">
-            <Link to="/login" className="text-[14px] font-medium text-[#424754] hover:text-[#0058be] transition-colors">
+            <Link to="/" className="text-[14px] font-medium text-[#424754] hover:text-[#0058be] transition-colors">
               Wrong account? Back to Login
             </Link>
           </div>
