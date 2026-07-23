@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import api from "../../api/axios"
 
 function formatTime(totalSeconds) {
-  const s = Math.max(0, Math.round(totalSeconds))
+  const s = Math.max(0, Math.round(totalSeconds || 0))
   const m = Math.floor(s / 60)
   const sec = s % 60
   return `${m}:${sec.toString().padStart(2, "0")}`
@@ -20,50 +20,155 @@ function Timeline() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [videoDuration, setVideoDuration] = useState(0)
-  const [videoUrl, setVideoUrl] = useState(null)
 
+  const [videoUrl, setVideoUrl] = useState(null)
+  const [videoLoading, setVideoLoading] = useState(true)
+  const [videoError, setVideoError] = useState(null)
+
+  // Load lecture timeline/highlights.
   useEffect(() => {
     let cancelled = false
 
-    async function load() {
+    async function loadTimeline() {
       try {
         setLoading(true)
+        setError(null)
+
         const res = await api.get(`/lectures/${id}/timeline/`)
+
         if (cancelled) return
-        setLecture(res.data?.data?.lecture)
+
+        setLecture(res.data?.data?.lecture || null)
         setHighlights(res.data?.data?.highlights || [])
       } catch (err) {
         if (cancelled) return
-        const msg = err?.response?.data?.message || "Failed to load timeline"
+
+        const msg =
+          err?.response?.data?.message ||
+          "Failed to load timeline"
+
         setError(msg)
         toast.error(msg)
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
-    load()
-    return () => { cancelled = true }
+    if (id) {
+      loadTimeline()
+    }
+
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
-  const handleSeek = (startTime) => {
+  // Load a fresh playable URL for the private S3 video.
+  // The original video remains permanently stored in S3.
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadVideo() {
+      try {
+        setVideoLoading(true)
+        setVideoError(null)
+
+        const res = await api.get(
+          `/lectures/${id}/video-url/`
+        )
+
+        if (cancelled) return
+
+        const url = res.data?.data?.video_url
+
+        if (!url) {
+          throw new Error(
+            "Video URL was not returned by the server."
+          )
+        }
+
+        setVideoUrl(url)
+      } catch (err) {
+        if (cancelled) return
+
+        console.error(
+          "Failed to load lecture video:",
+          err
+        )
+
+        const msg =
+          err?.response?.data?.message ||
+          "Unable to load lecture video."
+
+        setVideoError(msg)
+      } finally {
+        if (!cancelled) {
+          setVideoLoading(false)
+        }
+      }
+    }
+
+    if (id) {
+      loadVideo()
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  const handleSeek = async (startTime) => {
     const video = videoRef.current
-    if (!video) return
-    video.currentTime = startTime
-    video.play()
+
+    if (!video || !videoUrl) {
+      toast.error("Video is not ready yet.")
+      return
+    }
+
+    try {
+      video.currentTime = Number(startTime) || 0
+      await video.play()
+    } catch (err) {
+      console.error("Unable to play video:", err)
+    }
   }
 
-  const lastEnd = highlights.length ? highlights[highlights.length - 1].end_time : 0
-  const totalDuration = videoDuration || lastEnd || 1
+  const lastEnd = highlights.length
+    ? highlights[highlights.length - 1].end_time
+    : 0
+
+  const totalDuration =
+    videoDuration || lastEnd || 1
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f9f9ff" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#f9f9ff" }}
+      >
         <div className="flex items-center gap-3 text-[#424754]">
-          <svg className="animate-spin w-6 h-6 text-[#0058be]" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
+          <svg
+            className="animate-spin w-6 h-6 text-[#0058be]"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+            />
           </svg>
+
           Loading timeline...
         </div>
       </div>
@@ -72,8 +177,14 @@ function Timeline() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: "#f9f9ff" }}>
-        <p className="text-[#ba1a1a] text-[14px]">{error}</p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: "#f9f9ff" }}
+      >
+        <p className="text-[#ba1a1a] text-[14px]">
+          {error}
+        </p>
+
         <button
           onClick={() => navigate("/timeline")}
           className="text-[#0058be] font-semibold text-[14px] hover:underline"
@@ -84,124 +195,294 @@ function Timeline() {
     )
   }
 
-  const isProcessing = lecture && !["completed", "failed"].includes(lecture.status)
+  const isProcessing =
+    lecture &&
+    !["completed", "failed"].includes(
+      lecture.status
+    )
 
   return (
-    <div className="min-h-screen p-4 md:p-8" style={{ backgroundColor: "#f9f9ff", fontFamily: "Inter, sans-serif" }}>
+    <div
+      className="min-h-screen p-4 md:p-8"
+      style={{
+        backgroundColor: "#f9f9ff",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
       <main className="max-w-5xl mx-auto">
 
         {/* Header */}
         <header className="mb-8">
-          <Link to="/timeline" className="text-[13px] text-[#424754] hover:text-[#0058be] transition-colors inline-flex items-center gap-1 mb-3">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          <Link
+            to="/timeline"
+            className="text-[13px] text-[#424754] hover:text-[#0058be] transition-colors inline-flex items-center gap-1 mb-3"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
             </svg>
+
             Timeline list
           </Link>
-          <h1 className="text-[28px] font-semibold text-[#111c2d] tracking-tight">{lecture?.title}</h1>
-          <p className="text-[14px] text-[#424754] mt-1">Interactive timeline of key lecture moments</p>
+
+          <h1 className="text-[28px] font-semibold text-[#111c2d] tracking-tight">
+            {lecture?.title}
+          </h1>
+
+          <p className="text-[14px] text-[#424754] mt-1">
+            Interactive timeline of key lecture moments
+          </p>
         </header>
 
+        {/* Processing state */}
         {isProcessing && (
           <div className="mb-8 p-4 rounded-xl bg-[#e0f2fe] border border-[#0058be]/20 flex items-center gap-3">
-            <svg className="animate-spin w-5 h-5 text-[#0058be]" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
+            <svg
+              className="animate-spin w-5 h-5 text-[#0058be]"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+              />
             </svg>
+
             <p className="text-[14px] text-[#0058be] font-medium">
-              This lecture is still processing — timeline highlights will appear once transcription finishes.
+              This lecture is still processing — timeline
+              highlights will appear once transcription
+              finishes.
             </p>
           </div>
         )}
 
         {/* Video player */}
-        {lecture?.video_file && (
-          <div className="mb-8 rounded-2xl overflow-hidden border border-[#c2c6d6]/50 bg-black">
-            <video
-              ref={videoRef}
-              src={lecture.video_file}
-              controls
-              className="w-full max-h-[420px]"
-              onLoadedMetadata={(e) => setVideoDuration(e.target.duration)}
-            />
-          </div>
-        )}
+        <div className="mb-8">
+          {videoLoading && (
+            <div className="w-full aspect-video rounded-2xl bg-black flex items-center justify-center">
+              <div className="flex items-center gap-3 text-white/80">
+                <svg
+                  className="animate-spin w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                  />
+                </svg>
 
-        {/* Lecture flow mini-map — built from real highlight boundaries */}
+                Loading lecture video...
+              </div>
+            </div>
+          )}
+
+          {!videoLoading && videoError && (
+            <div className="w-full min-h-[220px] rounded-2xl bg-white border border-[#ba1a1a]/20 flex flex-col items-center justify-center gap-2 p-6">
+              <p className="text-[#ba1a1a] text-[14px] font-medium">
+                {videoError}
+              </p>
+
+              <p className="text-[#727785] text-[12px] text-center">
+                The timeline is available, but the lecture
+                video could not be loaded.
+              </p>
+            </div>
+          )}
+
+          {!videoLoading &&
+            !videoError &&
+            videoUrl && (
+              <div className="rounded-2xl overflow-hidden border border-[#c2c6d6]/50 bg-black">
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="w-full max-h-[520px]"
+                  onLoadedMetadata={(e) =>
+                    setVideoDuration(
+                      e.currentTarget.duration
+                    )
+                  }
+                >
+                  Your browser does not support video
+                  playback.
+                </video>
+              </div>
+            )}
+        </div>
+
+        {/* Lecture flow mini-map */}
         {highlights.length > 0 && (
           <div className="mb-8 bg-white border border-[#c2c6d6]/50 rounded-2xl p-5">
-            <h3 className="text-[12px] font-semibold text-[#424754] uppercase tracking-widest mb-3">Lecture flow</h3>
+            <h3 className="text-[12px] font-semibold text-[#424754] uppercase tracking-widest mb-3">
+              Lecture flow
+            </h3>
+
             <div className="flex items-center gap-1 h-10">
               {highlights.map((h) => {
-                const widthPct = Math.max(2, ((h.end_time - h.start_time) / totalDuration) * 100)
-                const isEq = h.highlight_type === "equation"
+                const widthPct = Math.max(
+                  2,
+                  ((h.end_time - h.start_time) /
+                    totalDuration) *
+                    100
+                )
+
+                const isEq =
+                  h.highlight_type === "equation"
+
                 return (
                   <div
                     key={h.id}
-                    onClick={() => handleSeek(h.start_time)}
-                    title={h.title}
+                    onClick={() =>
+                      handleSeek(h.start_time)
+                    }
+                    title={`${h.title} — ${formatTime(
+                      h.start_time
+                    )}`}
                     className={`h-full rounded-sm cursor-pointer transition-opacity hover:opacity-80 ${
-                      isEq ? "bg-[#ba1a1a]" : "bg-[#0058be]"
+                      isEq
+                        ? "bg-[#ba1a1a]"
+                        : "bg-[#0058be]"
                     }`}
-                    style={{ width: `${widthPct}%` }}
+                    style={{
+                      width: `${widthPct}%`,
+                    }}
                   />
                 )
               })}
             </div>
+
             <div className="flex justify-between mt-2">
-              <span className="text-[11px] text-[#727785]">0:00</span>
-              <span className="text-[11px] text-[#727785]">{formatTime(totalDuration)}</span>
+              <span className="text-[11px] text-[#727785]">
+                0:00
+              </span>
+
+              <span className="text-[11px] text-[#727785]">
+                {formatTime(totalDuration)}
+              </span>
             </div>
           </div>
         )}
 
-        {/* Highlights list */}
-        {highlights.length === 0 && !isProcessing ? (
+        {/* Highlights */}
+        {highlights.length === 0 &&
+        !isProcessing ? (
           <div className="text-center py-16">
-            <p className="text-[14px] text-[#424754]">No timeline highlights available for this lecture yet.</p>
+            <p className="text-[14px] text-[#424754]">
+              No timeline highlights available for this
+              lecture yet.
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
             {highlights.map((h) => {
-              const isEquation = h.highlight_type === "equation"
+              const isEquation =
+                h.highlight_type === "equation"
+
               return (
                 <div
                   key={h.id}
                   className={`rounded-2xl p-6 border ${
-                    isEquation ? "border-2 border-[#0058be]/10 bg-white" : "border-[#c2c6d6]/50 bg-white/70"
+                    isEquation
+                      ? "border-2 border-[#0058be]/10 bg-white"
+                      : "border-[#c2c6d6]/50 bg-white/70"
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start gap-4 mb-3">
                     <span className="bg-[#e0f2fe] text-[#0058be] px-3 py-1 rounded-full text-[12px] font-semibold">
-                      {formatTime(h.start_time)} - {formatTime(h.end_time)}
+                      {formatTime(h.start_time)} -{" "}
+                      {formatTime(h.end_time)}
                     </span>
+
                     <button
-                      onClick={() => handleSeek(h.start_time)}
-                      className="text-[#0058be] text-[13px] font-semibold flex items-center gap-1 hover:underline"
+                      type="button"
+                      onClick={() =>
+                        handleSeek(h.start_time)
+                      }
+                      disabled={
+                        videoLoading ||
+                        !!videoError ||
+                        !videoUrl
+                      }
+                      className="text-[#0058be] disabled:text-[#9ca3af] disabled:cursor-not-allowed text-[13px] font-semibold flex items-center gap-1 hover:underline"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
+
                       Watch segment
                     </button>
                   </div>
 
                   {isEquation && h.equation && (
                     <div className="bg-[#f0f3ff] p-6 rounded-xl border border-[#c2c6d6]/50 mb-4 flex items-center justify-center">
-                      <p className="font-mono text-[20px] text-[#0058be] text-center">{h.equation}</p>
+                      <p className="font-mono text-[20px] text-[#0058be] text-center">
+                        {h.equation}
+                      </p>
                     </div>
                   )}
 
-                  <h3 className="text-[18px] font-semibold text-[#111c2d] mb-2">{h.title}</h3>
-                  <p className="text-[14px] text-[#424754] leading-relaxed mb-3">{h.description}</p>
+                  <h3 className="text-[18px] font-semibold text-[#111c2d] mb-2">
+                    {h.title}
+                  </h3>
+
+                  <p className="text-[14px] text-[#424754] leading-relaxed mb-3">
+                    {h.description}
+                  </p>
 
                   {h.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {h.tags.map((tag) => (
-                        <span key={tag} className="px-2 py-1 bg-[#f0f3ff] rounded text-[12px] text-[#424754]">
+                        <span
+                          key={tag}
+                          className="px-2 py-1 bg-[#f0f3ff] rounded text-[12px] text-[#424754]"
+                        >
                           #{tag}
                         </span>
                       ))}

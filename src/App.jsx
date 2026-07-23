@@ -39,7 +39,7 @@ function App() {
         />
         <Routes>
           <Route path="/register"         element={<Register />} />
-          <Route path="/login"            element={<Login />} />
+          <Route path="/"            element={<Login />} />
           <Route path="/verify-otp"       element={<VerifyOtp />} />
           <Route path="/verify-login-otp" element={<VerifyLoginOtp />} />
           <Route path="/verify-mfa"       element={<VerifyMfa />} />
